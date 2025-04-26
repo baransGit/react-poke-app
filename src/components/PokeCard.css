@@ -1,0 +1,294 @@
+.poke-card-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background-color: silver;
+  width: 100%;
+  max-width: 300px;
+  height: 420px;
+  border-radius: 10px;
+  margin: 15px auto;
+}
+.poke-name {
+  font-family: "Roboto", sans-serif;
+  font-weight: 600;
+  color: white;
+
+  font-size: 1rem;
+}
+.poke-card-container .poke-card-header {
+  margin: 0;
+  position: absolute;
+  display: flex;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  bottom: 380px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  background-color: yellow;
+  padding: 10px;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+  z-index: 100;
+  border-bottom: solid 1px black;
+}
+.poke-card-header .type-icons {
+  display: flex;
+  flex-direction: row;
+  gap: 5px;
+  align-items: center;
+  margin-top: 5px;
+}
+.poke-card-header img {
+  width: 15px;
+  height: 15px;
+  gap: 10px;
+}
+.poke-card-container .poke-card-body {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  top: 20px;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  position: absolute;
+  background-color: #ffd700;
+  align-items: center;
+}
+.poke-card-body .poke-image {
+  position: relative;
+  margin-top: 10px;
+  display: flex;
+  width: 70%;
+  height: 40%;
+  background: linear-gradient(45deg, #ffd700 0%, #ffeb3b 50%, #ffc107 100%);
+
+  border: solid 1px black;
+  justify-content: center;
+  overflow: hidden;
+  z-index: 5;
+}
+.poke-card-body .poke-image::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 10px,
+    rgba(255, 255, 255, 0.2) 10px,
+    rgba(255, 255, 255, 0.2) 20px
+  );
+  z-index: 1;
+}
+
+.poke-card-body .poke-image img {
+  margin: 20px;
+  position: relative;
+  z-index: 3;
+  width: auto;
+  height: 80%;
+  object-fit: contain;
+}
+.poke-ball {
+  position: absolute;
+  bottom: 0px;
+  right: 5px;
+  z-index: 10;
+}
+
+.poke-image .poke-ball img {
+  margin: 0;
+  width: 30px;
+  height: 30px;
+  z-index: 300;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.poke-card-body .poke-image img.pokemon-sprite {
+  opacity: 0;
+  transition: opacity 0.5s;
+}
+
+.poke-card-body .poke-image img.pokemon-sprite.visible {
+  opacity: 1;
+}
+
+/* Poketopu animasyonu için stiller */
+.poke-ball img.pokeball-img {
+  transition: transform 0.5s;
+  transform-origin: center center;
+}
+
+.poke-ball img.pokeball-img.open {
+  transform: rotate(-70deg);
+}
+
+:root {
+  --type-normal: #a8a878;
+  --type-fire: #f08030;
+  --type-water: #6890f0;
+  --type-grass: #78c850;
+  --type-electric: #f8d030;
+  --type-ice: #98d8d8;
+  --type-fighting: #c03028;
+  --type-poison: #a040a0;
+  --type-ground: #e0c068;
+  --type-flying: #a890f0;
+  --type-psychic: #f85888;
+  --type-bug: #a8b820;
+  --type-rock: #b8a038;
+  --type-ghost: #705898;
+  --type-dragon: #7038f8;
+  --type-dark: #705848;
+  --type-steel: #b8b8d0;
+  --type-fairy: #ee99ac;
+}
+
+.poke-card-header[class*="type-"],
+.poke-card-body[class*="type-"] {
+  background-color: var(--type-normal);
+}
+
+.poke-card-header.type-normal,
+.poke-card-body.type-normal {
+  background-color: var(--type-normal);
+}
+.poke-card-header.type-fire,
+.poke-card-body.type-fire {
+  background-color: var(--type-fire);
+}
+.poke-card-header.type-water,
+.poke-card-body.type-water {
+  background-color: var(--type-water);
+}
+.poke-card-header.type-grass,
+.poke-card-body.type-grass {
+  background-color: var(--type-grass);
+}
+.poke-card-header.type-electric,
+.poke-card-body.type-electric {
+  background-color: var(--type-electric);
+}
+.poke-card-header.type-ice,
+.poke-card-body.type-ice {
+  background-color: var(--type-ice);
+}
+.poke-card-header.type-fighting,
+.poke-card-body.type-fighting {
+  background-color: var(--type-fighting);
+}
+.poke-card-header.type-poison,
+.poke-card-body.type-poison {
+  background-color: var(--type-poison);
+}
+.poke-card-header.type-ground,
+.poke-card-body.type-ground {
+  background-color: var(--type-ground);
+}
+.poke-card-header.type-flying,
+.poke-card-body.type-flying {
+  background-color: var(--type-flying);
+}
+.poke-card-header.type-psychic,
+.poke-card-body.type-psychic {
+  background-color: var(--type-psychic);
+}
+.poke-card-header.type-bug,
+.poke-card-body.type-bug {
+  background-color: var(--type-bug);
+}
+.poke-card-header.type-rock,
+.poke-card-body.type-rock {
+  background-color: var(--type-rock);
+}
+.poke-card-header.type-ghost,
+.poke-card-body.type-ghost {
+  background-color: var(--type-ghost);
+}
+.poke-card-header.type-dragon,
+.poke-card-body.type-dragon {
+  background-color: var(--type-dragon);
+}
+.poke-card-header.type-dark,
+.poke-card-body.type-dark {
+  background-color: var(--type-dark);
+}
+.poke-card-header.type-steel,
+.poke-card-body.type-steel {
+  background-color: var(--type-steel);
+}
+.poke-card-header.type-fairy,
+.poke-card-body.type-fairy {
+  background-color: var(--type-fairy);
+}
+
+.type-icon {
+  position: relative;
+}
+
+.type-icon::after {
+  content: attr(title);
+  position: absolute;
+  bottom: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.3s, visibility 0.3s;
+  z-index: 10;
+}
+
+/* Hover durumunda tooltip'i göster */
+.type-icon:hover::after {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Responsive tasarım için medya sorguları */
+@media (max-width: 768px) {
+  .poke-card-container {
+    height: 380px;
+  }
+
+  .poke-card-container .poke-card-header {
+    bottom: 340px;
+  }
+
+  .poke-name {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .poke-card-container {
+    height: 350px;
+  }
+
+  .poke-card-container .poke-card-header {
+    bottom: 310px;
+  }
+
+  .poke-card-body .poke-image {
+    width: 80%;
+  }
+}
+
+.test {
+  position: absolute;
+  bottom: 40%;
+  left: 20px;
+}
