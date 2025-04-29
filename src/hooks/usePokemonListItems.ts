@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import {
-  fetchAllPokemonList,
+  getAllPokemonListItems,
   PokemonListItem,
 } from "../services/pokemonService";
 
-export function useAllPokemonNames() {
+export function useAllListItems() {
   const [list, setList] = useState<PokemonListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -18,7 +18,7 @@ export function useAllPokemonNames() {
         if (cachedList) {
           setList(JSON.parse(cachedList));
         } else {
-          const fetchedList = await fetchAllPokemonList();
+          const fetchedList = await getAllPokemonListItems();
           setList(fetchedList);
           // Önbelleğe kaydet
           localStorage.setItem("allPokemonNames", JSON.stringify(fetchedList));

@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 import PokeTypes from "../types/pokeTypes";
-
+import { PokemonSpeciesData } from "../services/pokemonService";
 import "./PokeCard.css"; // Assuming you have a CSS file for styling
 import { capitalizeFirstLetter } from "../services/helper-service/util";
 import { getPokemonCry } from "../services/helper-service/pokemonHelper";
@@ -11,11 +11,7 @@ export interface PokeCardProps {
   types: PokeTypes[];
   image: string;
   onClickType?: (type: PokeTypes) => void;
-  speciesInfo?: {
-    flavor_text: string;
-    generation: string;
-    region: string;
-  };
+  speciesInfo?: PokemonSpeciesData;
 }
 
 export const PokeCard: React.FC<PokeCardProps> = ({
@@ -24,9 +20,13 @@ export const PokeCard: React.FC<PokeCardProps> = ({
   types,
   image,
   onClickType,
+  speciesInfo,
 }) => {
+  console.log("speciesInfo-flavor:", speciesInfo?.flavor_text);
   const [isPokeballOpen, setIsPokeballOpen] = useState(true);
+  const [isTextExpanded, setIsTextExpanded] = useState(false);
   const mainType = types[0] || "normal";
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const handlePokeBallClick = () => {
@@ -90,7 +90,35 @@ export const PokeCard: React.FC<PokeCardProps> = ({
             />
           </div>
         </div>
-        <div className="test">asfsaf</div>
+        <div className="species-info">
+          <p className={`flavor-text ${isTextExpanded ? "expanded" : ""}`}>
+            {speciesInfo?.flavor_text}
+          </p>
+
+          {speciesInfo?.flavor_text &&
+            speciesInfo.flavor_text.length > 70 &&
+            !isTextExpanded && (
+              <span
+                className={`load-more-text type-${mainType}`}
+                onClick={() => setIsTextExpanded(true)}
+              >
+                Load More
+              </span>
+            )}
+
+          {isTextExpanded && (
+            <span
+              className={`load-more-text type-${mainType}`}
+              onClick={() => setIsTextExpanded(false)}
+            >
+              Show Less
+            </span>
+          )}
+        </div>
+        <div className="reg-gen-infos">
+          <span className="generation-info">Gen-{speciesInfo?.generation}</span>
+          <span className="region-info">{speciesInfo?.region}</span>
+        </div>
       </div>
     </div>
   );

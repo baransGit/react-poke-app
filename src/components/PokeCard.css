@@ -58,6 +58,7 @@
   background-color: #ffd700;
   align-items: center;
 }
+
 .poke-card-body .poke-image {
   position: relative;
   margin-top: 10px;
@@ -286,9 +287,77 @@
     width: 80%;
   }
 }
+.species-info {
+  position: relative;
+  width: 90%;
+  margin: 2px auto;
+  position: relative;
+  text-align: center;
+}
+.species-info .flavor-text {
+  font-family: "VT323", "Pixelify Sans", monospace;
+  display: block;
+  max-height: 3.6em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.25em;
+  text-align: center; /* Yazıyı ortala */
+  padding: 5px;
+  margin: 0 auto;
+  font-size: 1rem;
+  word-break: normal;
+  word-spacing: normal;
+  white-space: normal;
+}
 
-.test {
+@supports (-webkit-line-clamp: 3) {
+  .species-info .flavor-text {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    overflow: hidden;
+  }
+}
+
+.flavor-text.expanded {
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+  max-height: none;
+}
+.load-more-text {
+  display: inline-block;
+  color: #3a71c1; /* Mavi renk, değiştirilebilir */
+  font-size: 0.75rem;
+  cursor: pointer;
+  margin-top: 2px;
+  font-weight: bold;
+  text-decoration: underline;
+}
+
+.load-more-text:hover {
+  opacity: 0.8;
+}
+
+/* Pokemon tipine göre renklendirme */
+.load-more-text[class*="type-"] {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.reg-gen-infos {
+  font-family: "VT323", "Pixelify Sans", monospace;
   position: absolute;
-  bottom: 40%;
-  left: 20px;
+  bottom: 15px;
+  left: 5%;
+  width: 90%;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  z-index: 10;
+}
+
+.generation-info,
+.region-info {
+  font-size: 1rem;
+  font-weight: bold;
 }

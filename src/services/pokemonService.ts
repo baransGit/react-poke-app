@@ -1,21 +1,24 @@
+import { REGION_MAPPING } from "./helper-service/util";
+import { PokeCardProps } from "../components/PokeCard";
+import {
+  getPokemonItem,
+  getRandomFlavorText,
+} from "./helper-service/pokemonHelper";
 import FilterType from "../types/filterType";
-import { FilterProps } from "../components/FilterForm";
+import { text } from "stream/consumers";
+import { get } from "http";
 const BASE_URL = "https://pokeapi.co/api/v2/pokemon/";
 const TYPE_URL = "https://pokeapi.co/api/v2/type/";
+const SPECIES_URL = "https://pokeapi.co/api/v2/pokemon-species/";
+
 interface PokemonListItem {
   name: string;
   url: string;
 }
-export interface PokemonSpeciesData {
+interface PokemonSpeciesData {
   flavor_text: string;
-  generation: string;
+  generation: number;
   region: string;
-}
-interface PokemonListResponse {
-  count: number;
-  next: string | null;
-  previous: string | null;
-  results: PokemonListItem[];
 }
 
 interface PokemonDetail {
@@ -29,169 +32,134 @@ interface PokemonDetail {
     };
   }[];
 }
+
 const cache: {
-  pokemonDetails: Record<string, PokemonDetail>;
-  pokemonsWithDetails: Record<string, PokemonDetail[]>;
-  pokemonTypeDetails: Record<string, PokemonDetail[]>;
+  pokemons: Record<string, PokemonDetail[]>;
+  species: Record<number, PokemonSpeciesData>;
 } = {
-  pokemonDetails: {},
-  pokemonsWithDetails: {},
-  pokemonTypeDetails: {},
+  pokemons: {},
+  species: {},
 };
 
-// Tek Pokemon'ın detayını getiren fonksiyon
-const fetchPokemonDetails = async (
-  url: string
-): Promise<PokemonDetail | null> => {
-  // URL'i cache anahtarı olarak kullanma
-  if (cache.pokemonDetails[url]) {
-    console.log("Pokemon details fetched from cache");
-    return cache.pokemonDetails[url];
+const getPokemons = async (options: {
+  limit?: number;
+  offset?: number;
+  type?: string;
+  name?: string;
+}): Promise<PokemonDetail[]> => {
+  const { limit = 20, offset = 0, type, name } = options;
+
+  const cacheKey = `${type || "all"}_${limit}_${offset}_${name || ""}`;
+  if (cache.pokemons[cacheKey]) {
+    return cache.pokemons[cacheKey];
+  }
+
+  try {
+    let pokemonList: PokemonDetail[] = [];
+
+    // Sadece tip filtresi kontrolü yap
+    if (type) {
+      const response = await fetch(`${TYPE_URL}${type}`);
+      const data = await response.json();
+      const typePokemons = data.pokemon
+        .slice(offset, offset + limit)
+        .map((p: any) => p.pokemon);
+
+      // Eğer name filtresi varsa, tip listesinde ara
+      let pokemonsToFetch = typePokemons;
+      if (name && name.length > 0) {
+        pokemonsToFetch = typePokemons.filter((pokemon: PokemonListItem) =>
+          pokemon.name.startsWith(name.toLowerCase())
+        );
+      }
+
+      const detailPromises = pokemonsToFetch.map(
+        async (pokemon: PokemonListItem) => {
+          const detailResponse = await fetch(pokemon.url);
+          return detailResponse.json();
+        }
+      );
+      pokemonList = await Promise.all(detailPromises);
+    }
+    // Tip yoksa normal liste getir
+    else {
+      const response = await fetch(
+        `${BASE_URL}?limit=${limit}&offset=${offset}`
+      );
+      const data = await response.json();
+      const detailPromises = data.results.map(
+        async (pokemon: PokemonListItem) => {
+          const detailResponse = await fetch(pokemon.url);
+          return detailResponse.json();
+        }
+      );
+      pokemonList = await Promise.all(detailPromises);
+    }
+
+    cache.pokemons[cacheKey] = pokemonList;
+    return pokemonList;
+  } catch (error) {
+    console.error("Error fetching pokemons:", error);
+    return [];
+  }
+};
+const getSpecies = async (
+  pokemonId: number
+): Promise<PokemonSpeciesData | null> => {
+  if (cache.species[pokemonId]) {
+    return cache.species[pokemonId];
   }
   try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(
-        "Network response was not ok while fetching pokemon details"
-      );
-    }
+    const response = await fetch(`${SPECIES_URL}${pokemonId}`);
     const data = await response.json();
-    // URL'i cache anahtarı olarak kullanma
-    cache.pokemonDetails[url] = data;
-    return data;
+
+    const generationNumber = Number(
+      data.generation.url.split("/").filter(Boolean).pop()
+    );
+    const flavorTextData = data.flavor_text_entries
+      .filter((text: any) => text.language.name === "en")
+      .map((text: any) => text.flavor_text);
+
+    console.log("flavorTextData:", flavorTextData);
+
+    const speciesData: PokemonSpeciesData = {
+      flavor_text: getRandomFlavorText(flavorTextData) || "",
+      generation: generationNumber,
+      region: REGION_MAPPING[generationNumber] || "Unknown",
+    };
+
+    cache.species[pokemonId] = speciesData;
+    return speciesData;
   } catch (error) {
-    console.error("Error fetching pokemon details:", error);
+    console.error("Error fetching species:", error);
     return null;
   }
 };
 
-// Birden çok Pokemon'ın detayını getiren fonksiyon
-const fetchMultiplePokemonDetails = async (
-  pokemons: PokemonListItem[]
-): Promise<(PokemonDetail | null)[]> => {
-  const promises = pokemons.map((pokemon) => {
-    return fetchPokemonDetails(pokemon.url);
-  });
-  return Promise.all(promises);
+const getPokemonsWithSpecies = async (options: {
+  limit?: number;
+  offset?: number;
+  type?: string;
+  name?: string;
+}): Promise<PokeCardProps[]> => {
+  const pokemons = await getPokemons(options);
+
+  const pokemonsWithSpecies = await Promise.all(
+    pokemons.map(async (pokemon) => {
+      const species = await getSpecies(pokemon.id);
+      if (!species) return null;
+      return getPokemonItem(pokemon, species);
+    })
+  );
+  return pokemonsWithSpecies.filter(
+    (pokemon): pokemon is PokeCardProps => pokemon !== null
+  );
 };
 
-const fetchPokemonsWithDetails = async (
-  limit: number = 20,
-  offset: number = 0,
-  filterType: FilterType = FilterType.DEFAULT,
-  filter?: FilterProps
-): Promise<PokemonDetail[]> => {
-  if (filterType === FilterType.DEFAULT) {
-    const cacheKey = `${limit}_${offset}`;
-
-    // Önbellek kontrolü
-    if (cache.pokemonsWithDetails[cacheKey]) {
-      console.log("Pokemons with details fetched from cache");
-      return cache.pokemonsWithDetails[cacheKey];
-    }
-
-    try {
-      // Pokemon listesini getir
-      const response = await fetch(
-        `${BASE_URL}?limit=${limit}&offset=${offset}`
-      );
-      if (!response.ok) {
-        console.error("Cannot fetch Pokemon List");
-        return [];
-      }
-      const listData: PokemonListResponse = await response.json();
-      if (!listData || !listData.results || listData.results.length === 0) {
-        console.error("No Pokemon data or empty results");
-        return [];
-      }
-
-      // Detayları getir
-      const detailsArray = await fetchMultiplePokemonDetails(listData.results);
-
-      // null olmayan detayları filtrele
-      const filteredDetails = detailsArray.filter(
-        (detail): detail is NonNullable<typeof detail> => detail !== null
-      );
-
-      // Önbelleğe kaydet
-      cache.pokemonsWithDetails[cacheKey] = filteredDetails;
-
-      return filteredDetails;
-    } catch (error) {
-      console.error("Error fetching pokemons with details:", error);
-      return [];
-    }
-  } else if (filter) {
-    // Filtreleme tipine göre Pokemon'ları getir
-    const typePokemons = await fetchPokemonByFilterType(filter, limit, offset);
-    return typePokemons;
-  }
-
-  // Hiçbir koşul eşleşmezse boş dizi döndür
-  return [];
-};
-
-const fetchPokemonByFilterType = async (
-  filter: FilterProps,
-  limit: number = 20,
-  offset: number = 0
-): Promise<PokemonDetail[]> => {
-  if (filter.type) {
-    // Önbellek anahtarı oluştur: 'type_limit_offset'
-    const cacheKey = `${filter.type}_${limit}_${offset}`;
-    console.log("Filter type:", filter.type, "Cache key:", cacheKey);
-
-    // Önbellek kontrolü
-    if (cache.pokemonTypeDetails[cacheKey]) {
-      console.log(`Pokemon details for type ${filter.type} fetched from cache`);
-      return cache.pokemonTypeDetails[cacheKey];
-    }
-
-    try {
-      const response = await fetch(`${TYPE_URL}${filter.type}`);
-      if (!response.ok) {
-        console.error(
-          `Failed to fetch type ${filter.type}, status: ${response.status}`
-        );
-        return [];
-      }
-
-      const pokeTypeData = await response.json();
-
-      const pokemonList = pokeTypeData.pokemon || [];
-
-      // İlk offset kadar elamanı atla, sonraki limit kadar elamanı al
-      const slicedList = pokemonList.slice(offset, offset + limit);
-
-      let pokemonData = slicedList.map((entry: any) => entry.pokemon);
-      if (filter.name && filter.name?.length > 0) {
-        const pokemonNames = pokemonData.filter((pokemon: PokemonListItem) =>
-          pokemon.name.startsWith(filter.name!)
-        );
-        pokemonData = pokemonNames;
-      }
-
-      const detailsArray = await fetchMultiplePokemonDetails(pokemonData);
-
-      const filteredDetails = detailsArray.filter(
-        (detail): detail is PokemonDetail => detail !== null
-      );
-
-      cache.pokemonTypeDetails[cacheKey] = filteredDetails;
-
-      return filteredDetails;
-    } catch (error) {
-      console.error(`Error fetching pokemons of type ${filter.type}:`, error);
-      return [];
-    }
-  }
-
-  return [];
-};
-const fetchAllPokemonList = async (): Promise<PokemonListItem[]> => {
+const getAllPokemonListItems = async (): Promise<PokemonListItem[]> => {
   try {
     const response = await fetch(
-      "https://pokeapi.co/api/v2/pokemon?limit=1302&offset=0"
+      "https://pokeapi.co/api/v2/pokemon?limit=1025&offset=0"
     );
     if (!response.ok) {
       console.log("Cannot fetch data");
@@ -205,14 +173,35 @@ const fetchAllPokemonList = async (): Promise<PokemonListItem[]> => {
     return [];
   }
 };
+const getPokemonsByUrls = async (
+  pokemonItems: PokemonListItem[]
+): Promise<PokemonDetail[]> => {
+  const cacheKey = `urls_${pokemonItems.map((p) => p.url).join("_")}`;
 
+  if (cache.pokemons[cacheKey]) {
+    return cache.pokemons[cacheKey];
+  }
+
+  try {
+    const detailPromises = pokemonItems.map(async (pokemon) => {
+      const detailResponse = await fetch(pokemon.url);
+      return detailResponse.json();
+    });
+
+    const pokemonList = await Promise.all(detailPromises);
+    cache.pokemons[cacheKey] = pokemonList;
+    return pokemonList;
+  } catch (error) {
+    console.error("Error fetching pokemons by urls:", error);
+    return [];
+  }
+};
 export {
-  fetchAllPokemonList,
-  fetchPokemonDetails,
-  fetchMultiplePokemonDetails,
-  fetchPokemonsWithDetails,
-  fetchPokemonByFilterType,
-  type PokemonListResponse,
+  getSpecies,
+  getPokemonsWithSpecies,
+  getAllPokemonListItems,
+  getPokemonsByUrls,
   type PokemonDetail,
+  type PokemonSpeciesData,
   type PokemonListItem,
 };

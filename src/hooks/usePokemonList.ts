@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 import FilterType from "../types/filterType";
-import { fetchPokemonsWithDetails } from "../services/pokemonService";
-import { PokemonDetail } from "../services/pokemonService";
-import { getPokemonItem } from "../services/helper-service/pokemonHelper";
+import { getPokemonsWithSpecies } from "../services/pokemonService";
 import { FilterProps } from "../components/FilterForm";
 import { PokeCardProps } from "../components/PokeCard";
 
@@ -21,20 +19,14 @@ export const usePokemonList = (
       setLoading(true);
       try {
         const offset = page * limit;
-        const pokemonDetails = await fetchPokemonsWithDetails(
+        const options = {
           limit,
           offset,
-          filterType,
-          filter
-        );
-        if (pokemonDetails && pokemonDetails.length > 0) {
-          const processedPokemons = pokemonDetails.map(
-            (detail: PokemonDetail) => getPokemonItem(detail)
-          );
-          setPokemons(processedPokemons);
-        } else {
-          setPokemons([]);
-        }
+          type: filter?.type,
+          name: filter?.name,
+        };
+        const pokemonsWithSpecies = await getPokemonsWithSpecies(options);
+        setPokemons(pokemonsWithSpecies);
       } catch (err) {
         setError(err instanceof Error ? err : new Error("Unknown error"));
       } finally {

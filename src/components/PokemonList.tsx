@@ -1,16 +1,14 @@
 import { useState, useMemo, useEffect } from "react";
 import { PokeCard } from "./PokeCard";
-import { getPokemonItem } from "../services/helper-service/pokemonHelper";
+
 import FilterType from "../types/filterType";
-import {
-  fetchMultiplePokemonDetails,
-  PokemonDetail,
-  PokemonListItem,
-} from "../services/pokemonService";
+import { PokemonListItem } from "../services/pokemonService";
+import { getPokemonsByUrls, getSpecies } from "../services/pokemonService";
 import { FilterForm, FilterProps } from "./FilterForm";
 import { usePokemonList } from "../hooks/usePokemonList";
-import { useAllPokemonNames } from "../hooks/usePokemonListItems";
+import { useAllListItems } from "../hooks/usePokemonListItems";
 import "./PokemonList.css";
+import { getPokemonItem } from "../services/helper-service/pokemonHelper";
 
 export const PokemonList: React.FC = () => {
   const [filterType, setFilterType] = useState<FilterType>(FilterType.DEFAULT);
@@ -25,7 +23,7 @@ export const PokemonList: React.FC = () => {
     filterType,
     filters
   );
-  const { list: allPokemonList, loading: namesLoading } = useAllPokemonNames();
+  const { list: allPokemonList, loading: namesLoading } = useAllListItems();
   console.log("allPokemonList type:", typeof allPokemonList);
   console.log("allPokemonList value:", allPokemonList);
   const filteredListByName = useMemo(() => {
@@ -40,20 +38,22 @@ export const PokemonList: React.FC = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+      if (filteredListByName.length === 0) return;
+      console.log("filteredListByName:", filteredListByName);
       try {
-        const filteredPokemonsDetails = await fetchMultiplePokemonDetails(
-          filteredListByName
+        const pokemonDetails = await getPokemonsByUrls(filteredListByName);
+        const speciesPromises = pokemonDetails.map((pokemon) =>
+          getSpecies(pokemon.id)
         );
-        if (filteredPokemonsDetails && filteredPokemonsDetails.length > 0) {
-          const processedPokemons = filteredPokemonsDetails
-            .filter((detail): detail is PokemonDetail => detail !== null)
-            .map((detail) => getPokemonItem(detail));
-          setPokemons(processedPokemons);
-        } else {
-          setPokemons([]);
-        }
+        const speciesList = await Promise.all(speciesPromises);
+
+        const processedPokemons = pokemonDetails.map((pokemon, index) =>
+          getPokemonItem(pokemon, speciesList[index]!)
+        );
+
+        setPokemons(processedPokemons);
       } catch (err) {
-        console.log("Cannot fetch data from name");
+        console.log("Cannot fetch data from urls");
       }
     };
     fetchData();
@@ -79,6 +79,8 @@ export const PokemonList: React.FC = () => {
 
   const handleReset = () => {
     setFilterType(() => FilterType.DEFAULT);
+    setSearchTerm("");
+    setFilters({});
   };
 
   return (
@@ -104,6 +106,7 @@ export const PokemonList: React.FC = () => {
                   name={pokemon.name}
                   image={pokemon.image}
                   types={pokemon.types}
+                  speciesInfo={pokemon.speciesInfo}
                   onClickType={(type) => {
                     console.log("Type clicked:", type);
                     setFilterType(FilterType.FILTERED);
